@@ -21,9 +21,9 @@
 class CustomEmoji < ApplicationRecord
   SHORTCODE_RE_FRAGMENT = '[a-zA-Z0-9_]{2,}'
 
-  SCAN_RE = /(?<=[^[:alnum:]:]|\n|^)
+  SCAN_RE = /(?<=[[:space:]]|^)
     :(#{SHORTCODE_RE_FRAGMENT}):
-    (?=[^[:alnum:]:]|$)/x
+    (?=[[:space:]]|$)/x
 
   has_attached_file :image, styles: { static: { format: 'png', convert_options: '-coalesce -strip' } }
 

@@ -8,11 +8,19 @@ const assetHost = process.env.CDN_HOST || '';
 let allowAnimations = false;
 
 const emojify = (str, customEmojis = {}) => {
-  let rtn = '';
+  let rtn = '', i, shortCodeStart;
+
+  if (str[0] === ':') {
+    i = 1;
+    shortCodeStart = 0;
+  } else {
+    i = 0;
+    shortCodeStart = null;
+  }
 
   // This loop initializes the internal state.
   for (;;) {
-    let i = 0, shortCodeStart = null;
+    const spaces = '\u0085\u0020\u00a0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000\u2028\u2029\u0009\u000a\u000b\u000c\u000d';
 
     // This loop looks for:
     // 1. the end of the string and
@@ -46,25 +54,33 @@ const emojify = (str, customEmojis = {}) => {
           i = rend;
           continue;
         }
-      } else if (shortCodeStart === null) {
-        // Short code started.
-
-        // Note that it is just a "candidate"; there may not be an ending
-        // colon and the end of the string, an HTML tag, or a Unicode emoji
-        // may appear. Therefore here just mark the start and continue the
-        // loop.
-        shortCodeStart = i;
       } else {
-        // Shortcode ended without any intrusive strings.
+        if (shortCodeStart !== null) {
+          const shortCodeEnd = i + 1;
 
-        // Get replacee as ':shortCode:'
-        const shortCode = str.slice(shortCodeStart, i + 1);
+          if (spaces.includes(str[shortCodeEnd]) || shortCodeEnd >= str.length) {
+            // Shortcode ended without any intrusive strings.
 
-        if (shortCode in customEmojis) {
-          const filename = allowAnimations ? customEmojis[shortCode].url : customEmojis[shortCode].static_url;
-          rtn += str.slice(0, shortCodeStart) + `<img draggable="false" class="emojione" alt="${shortCode}" title="${shortCode}" src="${filename}" />`;
-          i++;
-          break;
+            // Get replacee as ':shortCode:'
+            const shortCode = str.slice(shortCodeStart, shortCodeEnd);
+
+            if (shortCode in customEmojis) {
+              const filename = allowAnimations ? customEmojis[shortCode].url : customEmojis[shortCode].static_url;
+              rtn += str.slice(0, shortCodeStart) + `<img draggable="false" class="emojione" alt="${shortCode}" title="${shortCode}" src="${filename}" />`;
+              i++;
+              break;
+            }
+          }
+        }
+
+        if (spaces.includes(str[i - 1])) {
+          // Short code started.
+
+          // Note that it is just a "candidate"; there may not be an ending
+          // colon and the end of the string, an HTML tag, or a Unicode emoji
+          // may appear. Therefore here just mark the start and continue the
+          // loop.
+          shortCodeStart = i;
         }
       }
 
@@ -73,6 +89,9 @@ const emojify = (str, customEmojis = {}) => {
 
     // Slice the remainder.
     str = str.slice(i);
+
+    i = 0;
+    shortCodeStart = null;
   }
 };
 
